@@ -1,3 +1,3 @@
-import { defineLibrary } from '@ux-ui/tsdown-config';
+import { defineLibrary } from '@nilmuse/tsdown-config';
 
 export default defineLibrary({ platform: 'browser' });
