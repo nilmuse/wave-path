@@ -1,17 +1,17 @@
 {
   "name": "wave-path",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "Multi-layered SVG shape overlays that are dynamically generated with adjustable properties are used in creating transitions in SPA or for designing drawer menus",
-  "author": "ux-ui.pro",
+  "author": "Maxim <m@nilmuse.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ux-ui-pro/wave-path.git"
+    "url": "git+https://github.com/nilmuse/wave-path.git"
   },
   "bugs": {
-    "url": "https://github.com/ux-ui-pro/wave-path/issues"
+    "url": "https://github.com/nilmuse/wave-path/issues"
   },
-  "homepage": "https://github.com/ux-ui-pro/wave-path",
+  "homepage": "https://github.com/nilmuse/wave-path",
   "sideEffects": false,
   "type": "module",
   "packageManager": "npm@10.9.3",
