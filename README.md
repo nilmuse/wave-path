@@ -1,21 +1,11 @@
 # wave-path
 
-A lightweight library for multi-layered SVG overlays with animated open/close transitions.
+Animate layered SVG overlays with wave-shaped edges when they open and close.
 
 [![npm](https://img.shields.io/npm/v/wave-path.svg?colorB=brightgreen)](https://www.npmjs.com/package/wave-path)
 [![NPM Downloads](https://img.shields.io/npm/dm/wave-path.svg?style=flat)](https://www.npmjs.com/package/wave-path)
 
 [Demo](https://codepen.io/ux-ui/pen/Jjervqg)
-
----
-
-## Features
-
-- Smooth cubic-bezier wave edges via animated SVG `d` attributes.
-- Multiple layered `<path>` elements with configurable delay between layers.
-- Typed arrays and reused string buffers for low-allocation rendering.
-
----
 
 ## Installation
 
@@ -23,15 +13,48 @@ A lightweight library for multi-layered SVG overlays with animated open/close tr
 npm install wave-path
 ```
 
----
+## Quick start
 
-## Quick Start
+In a browser app with a bundler, add a button and an SVG with one `<path>` per layer. Use a `0 0 100 100` viewBox because the generated path coordinates run from `0` to `100`:
+
+```html
+<button id="toggle-wave" type="button">Toggle wave</button>
+
+<svg
+  id="wave-overlay"
+  class="wave-preview"
+  viewBox="0 0 100 100"
+  preserveAspectRatio="none"
+  aria-hidden="true"
+>
+  <path fill="#98b4c9"></path>
+  <path fill="#536f88"></path>
+  <path fill="#243b53"></path>
+</svg>
+```
+
+```css
+.wave-preview {
+  display: block;
+  width: 100%;
+  height: 320px;
+  background: #101820;
+}
+```
+
+Run this TypeScript module after the markup exists:
 
 ```ts
 import WavePath from 'wave-path';
 
+const button = document.getElementById('toggle-wave');
+
+if (!button) {
+  throw new Error('Wave toggle button was not found');
+}
+
 const wavePath = new WavePath({
-  svgEl: '.svg',
+  svgEl: '#wave-overlay',
   isOpened: false,
   numberPoints: 6,
   waveAmplitude: 30,
@@ -40,68 +63,67 @@ const wavePath = new WavePath({
 });
 
 wavePath.init();
-
-await wavePath.open();
-await wavePath.close();
-await wavePath.toggle();
+button.addEventListener('click', () => void wavePath.toggle());
 ```
 
----
+Click the button to open or close the layers. WavePath updates each path's `d` attribute; SVG sizing and colors come from your markup and CSS. Call `wavePath.destroy()` before removing the SVG.
 
 ## API
+
+`WavePath` is the default export. `WavePathOptions` is the constructor options type:
 
 ```ts
 import WavePath from 'wave-path';
 import type { WavePathOptions } from 'wave-path';
 ```
 
-- `WavePath` — main class (default export).
-- `WavePathOptions` — constructor options type.
+### Options
 
----
+Pass these options to `new WavePath(options)`:
 
-## Options
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `svgEl` | `string \| SVGElement` | Required | SVG selector or element. |
+| `pathEl` | `string` | `'path'` | Selector for paths inside the SVG. Each match is animated as a layer. |
+| `numberPoints` | `number` | `4` | Number of wave control points, clamped to `3`–`32`. Higher values add detail to the edge. |
+| `waveAmplitude` | `number` | `30` | Ripple amplitude, clamped to `0`–`100`. Use `0` for a straight edge. |
+| `delayPaths` | `number` | `0.25` | Delay between path layers, in seconds. |
+| `duration` | `number` | `1` | Animation duration for each layer, in seconds. |
+| `isOpened` | `boolean` | `false` | Initial state, applied by `init()`. Change it with `open()`, `close()`, or `toggle()`. |
 
-| Option          | Type                   | Default    | Description |
-|:----------------|:-----------------------|:-----------|:------------|
-| `svgEl`         | `string \| SVGElement` | —          | **Required.** SVG container selector or element node. |
-| `pathEl`        | `string`               | `'path'`   | Selector for `<path>` elements inside the SVG. All matched paths are animated as layers. |
-| `numberPoints`  | `number`               | `4`        | Number of wave control points (clamped to **3..32**). Higher values give a more detailed edge. |
-| `waveAmplitude` | `number`               | `30`       | Wave ripple amplitude (clamped to **0..100**). Set `0` for a straight edge animation. |
-| `delayPaths`    | `number`               | `0.25`     | Delay between animations of each path layer (seconds). |
-| `duration`      | `number`               | `1`        | Duration of each path layer animation (seconds). |
-| `isOpened`      | `boolean`              | `false`    | Initial state. Use `open()`, `close()`, or `toggle()` at runtime. |
+### Methods
 
-Animation timing starts on the first rendered frame and uses elapsed time, so `duration` and
-`delayPaths` are independent of display refresh rate. Large ripples blend smoothly between the
-top and bottom bounds. On 60 Hz displays, fast full-screen transitions still have larger steps
-between frames than on 120/144 Hz displays; increasing `duration` reduces those steps.
-`numberPoints` controls the detail of the wave edge, not the animation frame rate.
+| Method | Returns | Description |
+| --- | --- | --- |
+| `init()` | `void` | Find the SVG and paths, allocate internal buffers, and apply the initial shape. Call again if the SVG content changes. |
+| `toggle()` | `Promise<void>` | Toggle the overlay state and animate the transition. |
+| `open()` | `Promise<void>` | Open the overlay. |
+| `close()` | `Promise<void>` | Close the overlay. |
+| `totalDurationMs()` | `number` | Total animation duration in milliseconds, including layer delays. Call after `init()` so the path count is known. |
+| `stopIfActive()` | `void` | Cancel the current animation if one is running. |
+| `destroy()` | `void` | Cancel animation and clear references and caches. Safe to call more than once. |
 
----
+Read `wavePath.isOpened` for the current logical state. Animation methods resolve when the transition completes. Calls to `open()`, `close()`, or `toggle()` while an animation is running are ignored.
 
-## Methods
+## Sequence transitions
+
+Continuing with `wavePath` from Quick start, run transitions one after another:
 
 ```ts
-wavePath.init();
-await wavePath.toggle();
 await wavePath.open();
 await wavePath.close();
-wavePath.totalDurationMs();
-wavePath.stopIfActive();
-wavePath.destroy();
+await wavePath.toggle();
 ```
 
-- `init()` — resolves DOM references, allocates internal buffers, and sets a stable initial shape based on `isOpened`. Safe to call again if the SVG content changes.
-- `toggle()` — toggles between opened/closed. Returns a `Promise<void>` resolved on animation complete.
-- `open()` — opens the overlay. Returns a `Promise<void>` resolved on animation complete.
-- `close()` — closes the overlay. Returns a `Promise<void>` resolved on animation complete.
-- `totalDurationMs()` — returns total duration of the current animation in **milliseconds** (includes `delayPaths`). Call after `init()` so `pathCount` is known.
-- `stopIfActive()` — stops the current animation if active. Useful for cancelling or resetting animations.
-- `destroy()` — cancels animations, clears references and caches; safe to call multiple times.
-- `isOpened` (getter) — current logical state of the overlay (`boolean`).
+## Animation timing
 
----
+Timing starts on the first rendered frame and uses elapsed time, so `duration` and `delayPaths` do not depend on the display's refresh rate. The library animates cubic-bezier SVG edges and blends large ripples between the top and bottom bounds. Typed arrays and reused string buffers reduce allocations during rendering.
+
+Fast fullscreen transitions have larger steps between frames on a 60 Hz display than on a 120 or 144 Hz display. Increase `duration` to reduce the distance moved per frame. `numberPoints` changes edge detail, not frame rate.
+
+## Browser support
+
+Call `init()` after the SVG and its paths exist in the browser. The animation uses SVG paths and `requestAnimationFrame`.
 
 ## License
 
